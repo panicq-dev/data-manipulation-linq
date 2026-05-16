@@ -19,7 +19,7 @@ quanto aleatório.
 // [ x ] Remover musica da playlist
 // [ x ] Tocar uma musica aleatoria da playlist
 // [ x ] Reordenar musicas segundo alguma logica especifica (ex. duracao)
-// [ ] Uma playlist nao pode ter musicas repetidas
+// [ x ] Uma playlist nao pode ter musicas repetidas
 // [ ] Exibir as 10 musicas mais tocadas em todas as playlists (ranking)
 // [ ] Player de musica com:
 // [ ] - Fila de reproducao (para musicas avulsas e/ou playlists)
@@ -27,6 +27,7 @@ quanto aleatório.
 
 // ===========================================================================================================
 using System.Collections;
+using System.ComponentModel;
 using System.Threading.Channels;
 
 var musica1 = new Musica { Titulo = "Que Pais é Esse?", Artista = "Legião Urbana", Duracao = 350 };
@@ -42,8 +43,7 @@ rockNacional.Add(musica1);
 rockNacional.Add(musica3);
 rockNacional.Add(musica4);
 rockNacional.Add(musica5);
-
-ExibirPlaylist(rockNacional);
+rockNacional.Add(new Musica { Titulo = "Que Pais é Esse?", Artista = "Legião Urbana", Duracao = 350 });
 
 void ObterMusicaAleatorio(Playlist playlist)
 {
@@ -74,19 +74,56 @@ void RemoverMusicaPeloTitulo(Playlist playlist)
 
 void ExibirPlaylist(Playlist playlist)
     {
-        Console.WriteLine($"Tocando as músicas de {playlist.Nome}");
+        Console.WriteLine($"\nTocando as músicas de {playlist.Nome}");
         foreach (var musica in playlist)
         {
             Console.WriteLine($"- {musica.Titulo} / {musica.Artista} / {musica.Duracao}");
         }
     }
 
-
-rockNacional.OrdernarPorDuracao();
-
 ExibirPlaylist(rockNacional);
 
-rockNacional.OrdernarPorArtista();  
+var legiaoUrbana = new Playlist() { Nome = "Mais populares da Legião" };
+legiaoUrbana.Add(musica1);
+legiaoUrbana.Add(musica2);
+legiaoUrbana.Add(musica4);
+legiaoUrbana.Add(musica5);
+
+ExibirMaisTocadas(rockNacional, legiaoUrbana);
+
+void ExibirMaisTocadas(Playlist playlist1, Playlist playlist2)
+{
+    // RELAÇÃO DE COLUNAS: MÚSICA (CHAVE/KEY) e CONTAGEM (VALOR/VALUE)
+     Dictionary<Musica, int> ranking = [];
+    foreach (var musica in playlist1)
+    {
+        ranking.Add(musica, 1);
+    }
+    foreach (var musica in playlist2)
+    {
+        if (ranking.TryGetValue(musica, out int contagem)) // TryGetValue retorna um valor booleano. O out int contagem é um parâmetro de saída que recebe o valor associado a chave.
+        {
+            contagem++;
+            ranking[musica] = contagem;
+        } else
+        {
+            ranking[musica] = 1; // Cria mais uma linha com a música em questão e atribui contagem 1.
+        }
+    }
+    List<KeyValuePair<Musica, int>> top = [.. ranking]; // Lista Chave-Valor-Par, que recebe os valores de ranking.
+    top.Sort(new PorContagem());
+
+    Console.WriteLine("\nAs TOP 3 músicas mais incluidas!");
+    int contador = 1;
+    foreach (var par in top)
+    {
+        Console.WriteLine($"\t - { par.Key.Titulo}");
+        contador++;
+        if (contador > 3) break;
+    }
+}
+
+
 
 // ===========================================================================================================
 class Musica : IComparable
@@ -99,6 +136,20 @@ class Musica : IComparable
         if (obj is null) return -1;
         if (obj is Musica outraMusica) return this.Duracao.CompareTo(outraMusica.Duracao); // Compara se é um objeto do tipo música e depois compara com outra música.
         return -1;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj== null) return false;
+        if (obj is Musica outraMusica) 
+             return this.Titulo.Equals(outraMusica.Titulo) && 
+                this.Artista.Equals(outraMusica.Artista);
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return this.Titulo.GetHashCode() ^ this.Artista.GetHashCode(); // Mistura Titulo e Artista para gerar um HashCode. O HashCode padrão é calculado pela área de memória
     }
 }
 class PorArtista : IComparer<Musica> // Um comparador para músicas de artista.
@@ -126,8 +177,10 @@ class PorTitulo : IComparer<Musica> // Um comparador para músicas de título
 
 class Playlist : ICollection<Musica> // IColletion implementa as propriedades Add, Clear, Contais, CopyTo, Remove
 {
-    // Lista de Músicas já implementa, naturalmente, o ICollection
-    private List<Musica> lista = [];
+    // HashSet utilizado para evitar repetições, pois, por ser um conjunto, não pode haver elementos repetidos, por definição. Além disso, ele não tem ordenação sequencial.
+    private HashSet<Musica> set = [];
+
+    private List<Musica> lista = []; 
 
     public string Nome { get; set; }
 
@@ -139,7 +192,12 @@ class Playlist : ICollection<Musica> // IColletion implementa as propriedades Ad
 
     public void Add(Musica musica)
     {
-        lista.Add(musica);
+        if (set.Add(musica)) // Se a música for igual a algum outro elemento, não será adicionada ao set, pois ele é um HashSet que previne repetições.
+        {
+            lista.Add(musica); // Se conseguiu adicionar no HashSet, então pode adicionar na lista principal.
+        }
+        
+
     }
 
     public void Clear()
@@ -171,7 +229,6 @@ class Playlist : ICollection<Musica> // IColletion implementa as propriedades Ad
         return lista[indiceAleatorio];
     }
 
-
     // Obtendo Música pelo Título
     public Musica? ObterPeloTitulo(string titulo)
     {
@@ -182,6 +239,7 @@ class Playlist : ICollection<Musica> // IColletion implementa as propriedades Ad
         return null;
     }
 
+    // Ordenações
     public void OrdernarPorDuracao()
     {
         lista.Sort(); // .Sort() é o método de ordenação crescente. Ele segue a lógica determinada por IComparable, na classe Música
@@ -209,14 +267,10 @@ class Playlist : ICollection<Musica> // IColletion implementa as propriedades Ad
 
 }
 
-/* 
-Definindo Sort().
--> Sort() ordena uma lista. Sem parâmetros, usa a lógica padrão do CompareTo. Com parâmetros, usa a lógica de um Comparer específico.
-CompareTo retorna -1 (menor), 0 (igual) ou 1 (maior). Funciona para qualquer tipo que implemente IComparable, não só números.
-Criou-se a classe Comparer para ter múltiplas formas de ordenação sem alterar a classe Musica.
- 
-Porque implementar Comparers?
--> A classe Musica implementa IComparable com a lógica padrão (por duração). Isso é o "comportamento padrão" da classe.
-Os Comparers (PorArtista, PorTitulo) são lógicas adicionais, sem alterar a classe Musica.
- 
- */
+class PorContagem : IComparer<KeyValuePair<Musica, int>>
+{
+    public int Compare(KeyValuePair<Musica, int> x, KeyValuePair<Musica, int> y)
+    {
+        return y.Value.CompareTo(x.Value); // Comparando valores de forma decrescente, por isso invertendo y e x.
+    }
+}
