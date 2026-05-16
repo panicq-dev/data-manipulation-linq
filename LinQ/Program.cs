@@ -21,7 +21,7 @@ quanto aleatório.
 // [ x ] Reordenar musicas segundo alguma logica especifica (ex. duracao)
 // [ x ] Uma playlist nao pode ter musicas repetidas
 // [ x ] Exibir as 10 musicas mais tocadas em todas as playlists (ranking)
-// [ ] Player de musica com:
+// [ x ] Player de musica com:
 // [ x ] - Fila de reproducao (para musicas avulsas e/ou playlists)
 // [ ] - Historico de reproducao
 
@@ -301,10 +301,11 @@ class PorContagem : IComparer<KeyValuePair<Musica, int>>
 
 class PlayerDeMusica
 {
-    private List<Musica> fila = [];
+    // private List<Musica> fila = [];
+    private Queue<Musica> fila = [];
     public void AdicionarNaFila(Musica musica)
     {
-        fila.Add(musica);
+        fila.Enqueue(musica);
     }
 
     public void AdicionarNaFila(Playlist playlist) // Sobrecarga de método: mesmo nome, porém ações diferentes
@@ -318,9 +319,13 @@ class PlayerDeMusica
     public Musica? ProximaMusicaDaFila()
     {
         if (fila.Count == 0) return null;
+        return fila.Dequeue(); // Primeiro elementro que entrou, é o primeiro a sair.
+        /* 
         var musica = fila[0];
         fila.Remove(musica);
         return musica;
+        */
+
 
     }
     public IEnumerable<Musica> Fila() // IEnumerable dizendo que esse objeto "Musica" pode ser percorrido com foreach, então, justamente por isso, usamos ele. Ele só não pode ser mexido.
