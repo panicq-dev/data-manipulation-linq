@@ -20,9 +20,9 @@ quanto aleatório.
 // [ x ] Tocar uma musica aleatoria da playlist
 // [ x ] Reordenar musicas segundo alguma logica especifica (ex. duracao)
 // [ x ] Uma playlist nao pode ter musicas repetidas
-// [ ] Exibir as 10 musicas mais tocadas em todas as playlists (ranking)
+// [ x ] Exibir as 10 musicas mais tocadas em todas as playlists (ranking)
 // [ ] Player de musica com:
-// [ ] - Fila de reproducao (para musicas avulsas e/ou playlists)
+// [ x ] - Fila de reproducao (para musicas avulsas e/ou playlists)
 // [ ] - Historico de reproducao
 
 // ===========================================================================================================
@@ -81,7 +81,7 @@ void ExibirPlaylist(Playlist playlist)
         }
     }
 
-ExibirPlaylist(rockNacional);
+// ExibirPlaylist(rockNacional);
 
 var legiaoUrbana = new Playlist() { Nome = "Mais populares da Legião" };
 legiaoUrbana.Add(musica1);
@@ -89,41 +89,66 @@ legiaoUrbana.Add(musica2);
 legiaoUrbana.Add(musica4);
 legiaoUrbana.Add(musica5);
 
-ExibirMaisTocadas(rockNacional, legiaoUrbana);
+ExibirPlaylist(legiaoUrbana);
+var player = new PlayerDeMusica();
+player.AdicionarNaFila(musica1);
+player.AdicionarNaFila(rockNacional);
 
-void ExibirMaisTocadas(Playlist playlist1, Playlist playlist2)
+
+void ExibirFila(PlayerDeMusica player)
 {
-    // RELAÇÃO DE COLUNAS: MÚSICA (CHAVE/KEY) e CONTAGEM (VALOR/VALUE)
-     Dictionary<Musica, int> ranking = [];
-    foreach (var musica in playlist1)
+    Console.WriteLine("\nExibindo a fila de reprodução.");
+    foreach (var musica in player.Fila())
     {
-        ranking.Add(musica, 1);
-    }
-    foreach (var musica in playlist2)
-    {
-        if (ranking.TryGetValue(musica, out int contagem)) // TryGetValue retorna um valor booleano. O out int contagem é um parâmetro de saída que recebe o valor associado a chave.
-        {
-            contagem++;
-            ranking[musica] = contagem;
-        } else
-        {
-            ranking[musica] = 1; // Cria mais uma linha com a música em questão e atribui contagem 1.
-        }
-    }
-    List<KeyValuePair<Musica, int>> top = [.. ranking]; // Lista Chave-Valor-Par, que recebe os valores de ranking.
-    top.Sort(new PorContagem());
-
-    Console.WriteLine("\nAs TOP 3 músicas mais incluidas!");
-    int contador = 1;
-    foreach (var par in top)
-    {
-        Console.WriteLine($"\t - { par.Key.Titulo}");
-        contador++;
-        if (contador > 3) break;
+        Console.WriteLine($"\t - {musica.Titulo}");
     }
 }
 
+ExibirFila(player);
 
+var proxima = player.ProximaMusicaDaFila();
+if (proxima != null)
+{
+    Console.WriteLine($"Tocando a música {proxima.Titulo}...");
+} else
+{
+    Console.WriteLine("Fila de reprodução vazia.");
+}
+
+ExibirFila(player);
+
+void ExibirMaisTocadas(Playlist playlist1, Playlist playlist2)
+    {
+        // RELAÇÃO DE COLUNAS: MÚSICA (CHAVE/KEY) e CONTAGEM (VALOR/VALUE)
+        Dictionary<Musica, int> ranking = [];
+        foreach (var musica in playlist1)
+        {
+            ranking.Add(musica, 1);
+        }
+        foreach (var musica in playlist2)
+        {
+            if (ranking.TryGetValue(musica, out int contagem)) // TryGetValue retorna um valor booleano. O out int contagem é um parâmetro de saída que recebe o valor associado a chave.
+            {
+                contagem++;
+                ranking[musica] = contagem;
+            }
+            else
+            {
+                ranking[musica] = 1; // Cria mais uma linha com a música em questão e atribui contagem 1.
+            }
+        }
+        List<KeyValuePair<Musica, int>> top = [.. ranking]; // Lista Chave-Valor-Par, que recebe os valores de ranking.
+        top.Sort(new PorContagem());
+
+        Console.WriteLine("\nAs TOP 3 músicas mais incluidas!");
+        int contador = 1;
+        foreach (var par in top)
+        {
+            Console.WriteLine($"\t - {par.Key.Titulo}");
+            contador++;
+            if (contador > 3) break;
+        }
+    }
 
 // ===========================================================================================================
 class Musica : IComparable
@@ -173,7 +198,6 @@ class PorTitulo : IComparer<Musica> // Um comparador para músicas de título
         return x.Titulo.CompareTo(y.Titulo);
     }
 }
-
 
 class Playlist : ICollection<Musica> // IColletion implementa as propriedades Add, Clear, Contais, CopyTo, Remove
 {
@@ -272,5 +296,38 @@ class PorContagem : IComparer<KeyValuePair<Musica, int>>
     public int Compare(KeyValuePair<Musica, int> x, KeyValuePair<Musica, int> y)
     {
         return y.Value.CompareTo(x.Value); // Comparando valores de forma decrescente, por isso invertendo y e x.
+    }
+}
+
+class PlayerDeMusica
+{
+    private List<Musica> fila = [];
+    public void AdicionarNaFila(Musica musica)
+    {
+        fila.Add(musica);
+    }
+
+    public void AdicionarNaFila(Playlist playlist) // Sobrecarga de método: mesmo nome, porém ações diferentes
+    { 
+        foreach (Musica musica in playlist)
+        {
+            AdicionarNaFila(musica);
+        }
+    }
+
+    public Musica? ProximaMusicaDaFila()
+    {
+        if (fila.Count == 0) return null;
+        var musica = fila[0];
+        fila.Remove(musica);
+        return musica;
+
+    }
+    public IEnumerable<Musica> Fila() // IEnumerable dizendo que esse objeto "Musica" pode ser percorrido com foreach, então, justamente por isso, usamos ele. Ele só não pode ser mexido.
+    {
+        foreach (var musica in fila)
+        {
+            yield return musica;
+        }
     }
 }
