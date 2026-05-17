@@ -38,7 +38,7 @@ Além da manipulação de playlists, o sistema também possui um player com fila
 
 ---
 
-## Conceitos Trabalhados
+## Conceitos
 
 Este projeto foi desenvolvido principalmente como exercício prático dos seguintes conceitos:
 
@@ -75,9 +75,9 @@ Este projeto foi desenvolvido principalmente como exercício prático dos seguin
 
 ---
 
-## Estrutura Atual do Projeto
+## Estrutura
 
-Atualmente, toda a aplicação está centralizada no arquivo:
+Atualmente, toda a aplicação está centralizada no arquivo (para fins de estudo):
 
 ```bash
 📦 MusicPlaylistManager
@@ -109,7 +109,7 @@ foreach (var musica in playlist)
 
 ---
 
-## Destaques Técnicos
+## Escolhas tecnicas
 
 ### Controle de músicas duplicadas
 
@@ -144,7 +144,7 @@ permitindo múltiplas estratégias de ordenação.
 
 ---
 
-## Tecnologias Utilizadas
+## Tecnologias utilizadas
 
 - C#
 - .NET
